@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: Lime
 # @Date:   2013-10-28 13:39:48
-# @Last Modified by:   Lime
-# @Last Modified time: 2016-03-06 10:23:52
+# @Last Modified by:   Stefan Thor
+# @Last Modified time: 2016-06-10 14:50:13
 
 import os
 import sys
@@ -104,7 +104,21 @@ def get_template_part(syntax_type, part):
     tmplate_path = os.path.join(
         HEADER_PATH if part == 'header' else BODY_PATH, template_name)
 
-    custom_template_path = Settings().get('custom_template_%s_path' % part)
+    looking_for = 'custom_template_%s_path' % part
+    custom_template_path = Settings().get(looking_for)
+
+    if not custom_template_path:
+        try:
+            print('Trying')
+            custom_template_path = sublime.active_window().active_view().settings().get(looking_for, None)
+        except AttributeError:
+            # No view defined.
+            print('no view defined')
+            pass
+
+    print('Checking for custom templates for {} !!\n {}'.format(part, custom_template_path))
+
+
     if custom_template_path:
         path = os.path.abspath(os.path.expanduser(os.path.expandvars(
             os.path.join(custom_template_path, template_name))))
