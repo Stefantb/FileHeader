@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # @Author: Lime
 # @Date:   2013-10-28 13:39:48
-# @Last Modified by:   Stefan Thor
-# @Last Modified time: 2016-06-10 14:50:13
+# @Last Modified by:   stb
+# @Last Modified time: 2016-06-11 01:28:10
 
 import os
 import sys
@@ -93,8 +93,20 @@ def Window():
 
 def Settings():
     '''Get settings'''
-
     return sublime.load_settings('%s.sublime-settings' % PLUGIN_NAME)
+
+def SettingsPrefferFromProject(key, default=None):
+
+    setting = Settings().get(key, default)
+    # print('From settings: {}'.format(setting))
+    project_data = sublime.active_window().project_data()
+    if project_data:
+        from_project = project_data.get('settings',{}).get(key,None)
+        # print('from project: {}'.format(from_project))
+        if from_project is not None:
+            setting = from_project
+
+    return setting
 
 
 def get_template_part(syntax_type, part):
@@ -104,20 +116,7 @@ def get_template_part(syntax_type, part):
     tmplate_path = os.path.join(
         HEADER_PATH if part == 'header' else BODY_PATH, template_name)
 
-    looking_for = 'custom_template_%s_path' % part
-    custom_template_path = Settings().get(looking_for)
-
-    if not custom_template_path:
-        try:
-            print('Trying')
-            custom_template_path = sublime.active_window().active_view().settings().get(looking_for, None)
-        except AttributeError:
-            # No view defined.
-            print('no view defined')
-            pass
-
-    print('Checking for custom templates for {} !!\n {}'.format(part, custom_template_path))
-
+    custom_template_path = SettingsPrefferFromProject('FileHeader.custom_template_%s_path' % part)
 
     if custom_template_path:
         path = os.path.abspath(os.path.expanduser(os.path.expandvars(
@@ -173,12 +172,12 @@ def get_user():
 
 def get_project_name():
     '''Get project name'''
-
+    project_name = None
     project_data = sublime.active_window().project_data()
-    project = os.path.basename(
-        project_data['folders'][0]['path']) if project_data else None
+    if project_data:
+        project_name = project_data.get('settings',{}).get('FileHeader.project_name',None)
 
-    return project
+    return project_name
 
 
 def get_dir_path():
@@ -251,8 +250,8 @@ def get_args(syntax_type, options={}):
 
         return c_time, m_time
 
-    args = Settings().get('Default')
-    args.update(Settings().get(syntax_type, {}))
+    args = SettingsPrefferFromProject('FileHeader.Default')
+    args.update(SettingsPrefferFromProject(syntax_type, {}))
 
     format = get_strftime()
     c_time, m_time = get_st3_time() if IS_ST3 else get_st2_time()
